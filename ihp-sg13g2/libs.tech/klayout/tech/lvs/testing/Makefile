@@ -115,7 +115,7 @@ help:
 	@echo "... test-LVS                   (To run LVS for all devices with switching test   )"
 	@echo "... test-LVS-main              (To run LVS for all devices                       )"
 	@echo "... test-LVS-stdcells          (To run LVS for all standard cells                )"
-	@echo "... test-LVS-SVS               (To run manual SVS regression: 1 PASS + 2 FAIL     )"
+	@echo "... test-LVS-SVS               (To run the manual SVS netlist-vs-netlist checks  )"
 	@echo "... test-LVS-cmomi-checks      (To run the cap_cmomi detection-limit checks      )"
 	@echo "... test-LVS-cmomf-checks      (To run the cap_cmomf detection-limit checks      )"
 	@echo "... test-LVS-switch            (To run simple LVS switching test                 )"

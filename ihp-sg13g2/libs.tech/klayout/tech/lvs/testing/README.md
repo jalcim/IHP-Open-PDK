@@ -78,8 +78,8 @@ This table summarizes the supported schematic-side device syntax used by the LVS
 |  | `nmoscl_4` | `D1 N1 N2 nmoscl_4 m=1` | `m` | [`FD1`](#note-fd1) | [CDL](./testcases/unit/esd_devices/netlist/nmoscl_4.cdl) / [GDS](./testcases/unit/esd_devices/layout/nmoscl_4.gds) |
 | **Inductor** | `inductor` | `L1 N1 N2 SUB inductor w=2u s=2.1u d=25.35u nr_r=1` | `w`, `s`, `d`, `nr_r` | - | [CDL](./testcases/unit/ind_devices/netlist/inductor.cdl) / [GDS](./testcases/unit/ind_devices/layout/inductor.gds) |
 |  | `inductor3` | `L1 N1 N2 N3 SUB inductor3 w=2u s=2.1u d=25.35u nr_r=2` | `w`, `s`, `d`, `nr_r` | - | [CDL](./testcases/unit/ind_devices/netlist/inductor3.cdl) / [GDS](./testcases/unit/ind_devices/layout/inductor3.gds) |
-| **Tap** | `ntap1` | `R1 TIE WELL ntap1 A=608.4f Perim=3.12u` | `A`, `P` | [`T1`](#note-t1) | [CDL](./testcases/unit/tap_devices/netlist/ntap1.cdl) / [GDS](./testcases/unit/tap_devices/layout/ntap1.gds) |
-|  | `ptap1` | `R1 TIE WELL ptap1 A=608.4f P=3.12u` | `A`, `P` | [`T1`](#note-t1) | [CDL](./testcases/unit/tap_devices/netlist/ptap1.cdl) / [GDS](./testcases/unit/tap_devices/layout/ptap1.gds) |
+| **Tap** | `ntap1` | `R1 TIE WELL ntap1 A=608.4f Perim=3.12u`<br>`or`<br>`XR1 TIE WELL ntap1 A=608.4f Perim=3.12u` | `A`, `P` | [`T1`](#note-t1) | [CDL](./testcases/unit/tap_devices/netlist/ntap1.cdl) / [GDS](./testcases/unit/tap_devices/layout/ntap1.gds) |
+|  | `ptap1` | `R1 TIE WELL ptap1 A=608.4f P=3.12u`<br>`or`<br>`XR1 TIE WELL ptap1 A=608.4f P=3.12u` | `A`, `P` | [`T1`](#note-t1) | [CDL](./testcases/unit/tap_devices/netlist/ptap1.cdl) / [GDS](./testcases/unit/tap_devices/layout/ptap1.gds) |
 
 ### Notes
 
@@ -112,7 +112,7 @@ This table summarizes the supported schematic-side device syntax used by the LVS
   Two things behave differently from `cap_cmomi` and are worth knowing. A `cap_cmomf` whose two plates are tied together reports as a **missing** device, not as a short: KLayout drops a device whose terminals all land on the same net, so it never reaches the comparison. And **in deep mode a layout whose every cap sits in a sub-cell with no net crossing that cell's boundary extracts nothing**, the comparison then has no pair left and reports a match having verified nothing. That one is not specific to this device: `cap_cmomi` does the same on the same construction, and it was first recorded in [ihp-sg13cmos5l#91](https://github.com/IHP-GmbH/ihp-sg13cmos5l/issues/91). The checks suite holds it as a case, together with the same hierarchy wired to the top, which does compare for real.
 
   `make test-LVS-cmomf-checks` holds all of the above as executable cases.
-- <a id="note-t1"></a>`T1`: Tap devices may use either `A/P` (`Perim`) or `W/L`; LVS compares `A/P`.
+- <a id="note-t1"></a>`T1`: Tap devices may use either `A/P` (`Perim`) or `W/L`; LVS compares `A/P`. They may also be written as subcircuit calls (`X...`), as in the IO CDLs. Only calls to the model names `ptap1` and `ntap1` are read this way. A top circuit with one of those names, such as the tap regression cases, stays a circuit as long as no `X` call targets that name. A tap takes its nodes in the order `TIE`, `WELL`. A tap call with a node count other than two, or an `R` tap with three nodes, is a read error. `make test-LVS-SVS` holds these cases.
 
 ## Devices Regression Usage
 

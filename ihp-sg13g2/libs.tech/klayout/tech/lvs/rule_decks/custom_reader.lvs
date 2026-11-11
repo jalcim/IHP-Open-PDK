@@ -252,7 +252,7 @@ class CustomReader < RBA::NetlistSpiceReaderDelegate
     # Prep sch for C/R.
     line = clean_sch(line, element) if element == 'C' || element == 'R'
 
-    super
+    alias_tap_call(super, element)
   rescue StandardError
     case element
     when 'C'
@@ -278,18 +278,34 @@ class CustomReader < RBA::NetlistSpiceReaderDelegate
         super("#{line} L=0", element)
       end
     else
-      super
+      alias_tap_call(super, element)
     end
   end
 
   # Override the element method to handle different types of elements
   def element(circuit, ele, name, model, value, nets, params)
-    if CUSTOM_READER.include?(ele)
+    tap = tap_model_for(ele, model)
+    if tap
+      process_tap(circuit, ele, name, tap, nets, params)
+    elsif CUSTOM_READER.include?(ele)
       process_device(ele, circuit, name, model, nets, params)
     else
       super
     end
     true
+  end
+
+  # Tap models that may also be written as subcircuit calls, as in the IO CDLs:
+  # XR0 vss sub! ptap1 A=624.1f P=3.16u
+  TAP_MODELS = %w[PTAP1 NTAP1].freeze
+  TAP_CALL_SUFFIX = '$XTAP'
+
+  # Hand X calls to ptap1/ntap1 to element instead of building a circuit.
+  # parse_element renames their model to a private alias, and only the alias
+  # is claimed: claiming ptap1/ntap1 themselves would also drop top circuits
+  # with those names, such as the tap regression testcases.
+  def wants_subcircuit(name)
+    !tap_call_model(name).nil?
   end
 
   private
@@ -662,6 +678,51 @@ class CustomReader < RBA::NetlistSpiceReaderDelegate
     device.set_parameter('s', (params['S'] || 0.0) * 1e6)
     device.set_parameter('d', (params['D'] || 0.0) * 1e6)
     device.set_parameter('nr_r', params['NR_R'] || 0.0)
+  end
+
+  # Input : parse result of one element, element type.
+  # Output: the same parse result; for an X call to ptap1/ntap1 the model
+  #         gets TAP_CALL_SUFFIX, so that only wants_subcircuit claims it.
+  # Usage : applied to every result of parse_element.
+  def alias_tap_call(data, element)
+    model = data.model_name.to_s
+    data.model_name = "#{model}#{TAP_CALL_SUFFIX}" if element == 'X' && TAP_MODELS.include?(model.upcase)
+    data
+  end
+
+  # Input : circuit or model name.
+  # Output: 'PTAP1' or 'NTAP1' for an alias made by alias_tap_call, else nil.
+  # Usage : wants_subcircuit and tap_model_for.
+  def tap_call_model(name)
+    upper = name.to_s.upcase
+    return nil unless upper.end_with?(TAP_CALL_SUFFIX)
+
+    model = upper.delete_suffix(TAP_CALL_SUFFIX)
+    TAP_MODELS.include?(model) ? model : nil
+  end
+
+  # Input : element type and model name.
+  # Output: 'PTAP1' or 'NTAP1' for a tap in R form or X form, else nil.
+  # Usage : element, to route both forms of a tap to process_tap.
+  def tap_model_for(ele, model)
+    case ele
+    when 'X'
+      tap_call_model(model)
+    when 'R'
+      upper = model.to_s.upcase
+      TAP_MODELS.include?(upper) ? upper : nil
+    end
+  end
+
+  # Input : circuit, element type, name, tap model, nets, params.
+  # Output: a CustomTap device, through the resistor path of process_device.
+  #         A tap with a node count other than two is a read error: the
+  #         device class has TIE and WELL only, other nodes would be lost.
+  # Usage : element, for taps in R form and in X form.
+  def process_tap(circuit, ele, name, model, nets, params)
+    error("#{ele}#{name}: tap #{model} needs 2 nodes (TIE WELL), got #{nets.size}") unless nets.size == 2
+
+    process_device('R', circuit, name, model, nets, params)
   end
 
 end

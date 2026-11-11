@@ -104,6 +104,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 #### LVS / DRC
+- KLayout LVS: `ptap1`/`ntap1` taps written as subcircuit calls (`XR0 TIE WELL ptap1 A=... P=...`), as in the IO CDLs, are read as tap devices instead of being dropped. A tap call with a node count other than two, or an `R` tap with three nodes, is now a read error. SG13G2 and SG13CMOS5L ([#1281](https://github.com/IHP-GmbH/IHP-Open-PDK/issues/1281))
 - KLayout LVS: RF MOS devices keep their layout geometry. They are now compared as the extracted `rf*` device classes, the netlist reader maps base models with `rfmode=1` to them. `rfmos_model_mapping.lvs`, which replaced them by new devices without device abstract, is removed ([#1246](https://github.com/IHP-GmbH/IHP-Open-PDK/pull/1246))
 - KLayout LVS: parallel RF + plain fingers no longer merge under simplify. Previously this gave a false match, so some layouts may now fail LVS ([#1246](https://github.com/IHP-GmbH/IHP-Open-PDK/pull/1246))
 - KLayout LVS: fixed LVS testing regression (#1126)
